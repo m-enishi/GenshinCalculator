@@ -1,0 +1,894 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원신 계산기</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background-color: #20232b;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        /* 로그인 화면 */
+        #loginScreen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #title {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        #password {
+            width: 250px;
+            height: 42px;
+            padding: 10px;
+            font-size: 16px;
+            text-align: center;
+            border: 1px solid #555;
+            border-radius: 6px;
+        }
+
+        #loginButton {
+            margin-top: 15px;
+            width: 100px;
+            height: 40px;
+            border: 0;
+            border-radius: 6px;
+            background: #d5bd8a;
+            color: #222;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #loginButton:hover {
+            background: #e5d0a2;
+        }
+
+        /* SEL 화면 */
+        #selScreen {
+            display: none;
+            padding: 35px 6%;
+        }
+
+        .sel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .sel-header h1 {
+            font-size: 32px;
+            margin: 0;
+        }
+
+        .sel-subtitle {
+            color: #aaa;
+            margin-top: 10px;
+        }
+
+        /* 검색창 */
+        .search-area {
+            margin-bottom: 20px;
+        }
+
+        #searchInput {
+            width: 100%;
+            max-width: 400px;
+            height: 42px;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 6px;
+            background: #30343e;
+            color: white;
+            font-size: 15px;
+        }
+
+        #searchInput:focus,
+        #password:focus {
+            outline: 2px solid #d5bd8a;
+        }
+
+        /* 원소 필터 */
+        .filter-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .filter-button {
+            padding: 9px 17px;
+            border: 1px solid #555;
+            border-radius: 20px;
+            background: #30343e;
+            color: white;
+            cursor: pointer;
+        }
+
+        .filter-button:hover {
+            border-color: #d5bd8a;
+        }
+
+        .filter-button.active {
+            background: #d5bd8a;
+            color: #222;
+            border-color: #d5bd8a;
+        }
+
+        /* 캐릭터 목록 */
+        #characterList {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 18px;
+        }
+
+        .character-card {
+            background: #30343e;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .character-card:hover {
+            transform: translateY(-5px);
+            border-color: #d5bd8a;
+        }
+
+        .character-card.selected {
+            border-color: #d5bd8a;
+            background: #45413a;
+        }
+
+        /* 캐릭터 이미지 */
+        .character-image {
+            width: 100%;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #414652;
+            color: #bbb;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .character-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .character-info {
+            padding: 12px;
+        }
+
+        .character-name {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .character-element {
+            margin-top: 7px;
+            color: #d5bd8a;
+            font-size: 13px;
+        }
+
+        /* 선택 결과 */
+        #selectedInfo {
+            margin-top: 30px;
+            padding: 18px;
+            background: #30343e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        #selectedName {
+            color: #d5bd8a;
+            font-weight: bold;
+        }
+
+        /* 검색 결과 없음 */
+        #emptyMessage {
+            grid-column: 1 / -1;
+            padding: 35px 10px;
+            color: #aaa;
+            text-align: center;
+            background: #30343e;
+            border-radius: 8px;
+        }
+
+        /* 모바일 화면 */
+        @media (max-width: 600px) {
+            #selScreen {
+                padding: 25px 4%;
+            }
+
+            .sel-header h1 {
+                font-size: 26px;
+            }
+
+            #characterList {
+                grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+                gap: 12px;
+            }
+
+            .character-image {
+                height: 150px;
+            }
+        }
+	/* ========================================
+   ALU 계산 화면
+======================================== */
+
+#aluScreen {
+    display: none;
+    padding: 30px 4%;
+}
+
+.alu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.alu-header h1 {
+    margin: 0;
+}
+
+.alu-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+    gap: 22px;
+    align-items: start;
+}
+
+.alu-panel {
+    background: #30343e;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 18px;
+}
+
+.alu-panel h2 {
+    font-size: 20px;
+    margin: 0 0 18px;
+}
+
+.alu-character {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+#aluCharacterImage {
+    width: 115px;
+    height: 135px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #414652;
+}
+
+.alu-button {
+    padding: 9px 15px;
+    border: 0;
+    border-radius: 6px;
+    background: #d5bd8a;
+    color: #222;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.alu-button:hover {
+    background: #e5d0a2;
+}
+
+.alu-weapon {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#selectedWeaponImage {
+    width: 85px;
+    height: 85px;
+    object-fit: contain;
+    background: #414652;
+    border-radius: 8px;
+}
+
+.artifact-slot {
+    display: grid;
+    grid-template-columns: 75px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #50545e;
+}
+
+.artifact-slot:last-child {
+    border-bottom: 0;
+}
+
+.artifact-slot img {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+    background: #414652;
+    border-radius: 8px;
+}
+
+.artifact-slot select,
+.artifact-slot input {
+    width: 100%;
+    margin-top: 5px;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background: #20232b;
+    color: white;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #50545e;
+}
+
+.stat-value {
+    color: #d5bd8a;
+    font-weight: bold;
+}
+
+#weaponModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0,0,0,0.75);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.weapon-modal-content {
+    width: 100%;
+    max-width: 650px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 22px;
+    border-radius: 12px;
+    background: #30343e;
+}
+
+#weaponSearch {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background: #20232b;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 6px;
+}
+
+#weaponList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+    gap: 12px;
+}
+
+.weapon-card {
+    padding: 10px;
+    background: #414652;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.weapon-card:hover {
+    outline: 2px solid #d5bd8a;
+}
+
+.weapon-card img {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+}
+
+@media (max-width: 750px) {
+    .alu-layout {
+        grid-template-columns: 1fr;
+    }
+}
+/* 성유물 슬롯 */
+.artifact-slot {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #292929;
+    border-radius: 10px;
+}
+
+.artifact-slot > img {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+}
+
+.artifact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+/* 성유물 선택 팝업 */
+.artifact-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.75);
+    justify-content: center;
+    align-items: center;
+}
+
+.artifact-modal-content {
+    width: 90%;
+    max-width: 650px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 20px;
+    background: #252525;
+    border-radius: 12px;
+}
+
+.artifact-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+#artifactSearch {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.artifact-set-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+}
+
+.artifact-set-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 6px;
+    background: #383838;
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+}
+
+.artifact-set-card:hover {
+    background: #505050;
+}
+
+.artifact-set-card img {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+}
+    </style>
+</head>
+
+<body>
+
+    <!-- 로그인 화면 -->
+    <div id="loginScreen">
+
+        <div id="title">원신 계산기</div>
+
+        <input
+            type="password"
+            id="password"
+            placeholder="비밀번호 입력"
+            autocomplete="on"
+        >
+
+        <button
+            id="loginButton"
+            type="button"
+            onclick="checkPassword()"
+        >
+            확인
+        </button>
+
+    </div>
+
+
+    <!-- SEL 캐릭터 선택 화면 -->
+    <div id="selScreen">
+
+        <div class="sel-header">
+            <div>
+                <h1>캐릭터 선택</h1>
+
+                <div class="sel-subtitle">
+                    계산할 캐릭터를 선택해 주세요.
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 검색 -->
+        <div class="search-area">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="캐릭터 이름 검색"
+                oninput="renderCharacters()"
+            >
+
+        </div>
+
+
+        <!-- 원소 필터 -->
+        <div class="filter-area">
+
+            <button class="filter-button active" type="button"
+                onclick="setFilter('전체', this)">전체</button>
+
+            <button class="filter-button" type="button"
+                onclick="setFilter('불', this)">불</button>
+
+            <button class="filter-button" type="button"
+                onclick="setFilter('물', this)">물</button>
+
+            <button class="filter-button" type="button"
+                onclick="setFilter('얼음', this)">얼음</button>
+
+            <button class="filter-button" type="button"
+                onclick="setFilter('번개', this)">번개</button>
+
+            <button class="filter-button" type="button"
+                onclick="setFilter('바람', this)">바람</button>
+
+            <button class="filter-button" type="button"
+                onclick="setFilter('바위', this)">바위</button>
+
+            <button class="filter-button" type="button"
+                onclick="setFilter('풀', this)">풀</button>
+
+        </div>
+
+
+        <!-- 캐릭터 카드 목록 -->
+        <div id="characterList"></div>
+
+
+        <!-- 선택 결과 -->
+        <div id="selectedInfo">
+
+            선택된 캐릭터:
+            <span id="selectedName">없음</span>
+
+        </div>
+
+    </div>
+	
+	<!-- ========================================
+     ALU 계산 화면
+======================================== -->
+
+<div id="aluScreen">
+
+    <div class="alu-header">
+        <h1>캐릭터 계산기</h1>
+
+        <button class="alu-button" onclick="backToSEL()">
+            캐릭터 다시 선택
+        </button>
+    </div>
+
+
+    <div class="alu-layout">
+
+        <!-- 왼쪽: 캐릭터 및 장비 설정 -->
+        <div>
+
+            <!-- 캐릭터 정보 -->
+            <div class="alu-panel">
+
+                <h2>캐릭터 정보</h2>
+
+                <div class="alu-character">
+
+                    <img id="aluCharacterImage"
+                         src=""
+                         alt="캐릭터 이미지">
+
+                    <div>
+                        <h2 id="aluCharacterName">캐릭터 이름</h2>
+                        <p id="aluCharacterElement">원소</p>
+                        <p>Lv.90</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- 무기 설정 -->
+            <div class="alu-panel">
+
+                <h2>무기 설정</h2>
+
+                <div class="alu-weapon">
+
+                    <img id="selectedWeaponImage"
+                         src=""
+                         alt="무기 이미지">
+
+                    <div style="flex:1;">
+                        <strong id="selectedWeaponName">
+                            무기를 선택해 주세요.
+                        </strong>
+
+                        <p id="selectedWeaponInfo">
+                            기초 공격력 및 부옵션
+                        </p>
+
+                        <button class="alu-button"
+                                onclick="openWeaponModal()">
+                            무기 선택
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- 성유물 설정 -->
+            <div class="alu-panel">
+
+                <h2>성유물 설정</h2>
+
+                <div id="artifactSlots">
+
+                    <div class="artifact-slot">
+                        <img src="" alt="꽃">
+                        <div>
+                            <strong>꽃</strong>
+                            <select>
+                                <option>세트 선택</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="artifact-slot">
+                        <img src="" alt="깃털">
+                        <div>
+                            <strong>깃털</strong>
+                            <select>
+                                <option>세트 선택</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="artifact-slot">
+                        <img src="" alt="시계">
+                        <div>
+                            <strong>시계</strong>
+                            <select>
+                                <option>세트 선택</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="artifact-slot">
+                        <img src="" alt="성배">
+                        <div>
+                            <strong>성배</strong>
+                            <select>
+                                <option>세트 선택</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="artifact-slot">
+                        <img src="" alt="왕관">
+                        <div>
+                            <strong>왕관</strong>
+                            <select>
+                                <option>세트 선택</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- 오른쪽: 최종 능력치 -->
+        <div>
+
+            <div class="alu-panel">
+
+                <h2>최종 능력치</h2>
+
+                <div id="finalStats">
+
+                    <div class="stat-row">
+                        <span>HP</span>
+                        <span class="stat-value" id="statHP">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>공격력</span>
+                        <span class="stat-value" id="statATK">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>방어력</span>
+                        <span class="stat-value" id="statDEF">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>치명타 확률</span>
+                        <span class="stat-value" id="statCR">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>치명타 피해</span>
+                        <span class="stat-value" id="statCD">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>원소 마스터리</span>
+                        <span class="stat-value" id="statEM">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>원소 충전 효율</span>
+                        <span class="stat-value" id="statER">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>치유 보너스</span>
+                        <span class="stat-value" id="statHR">-</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- 원소 피해 보너스 -->
+            <div class="alu-panel">
+
+                <h2>원소 피해 보너스</h2>
+
+                <div id="elementalStats">
+
+                    <div class="stat-row">
+                        <span>불 원소</span>
+                        <span class="stat-value" id="statPyro">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>물 원소</span>
+                        <span class="stat-value" id="statHydro">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>번개 원소</span>
+                        <span class="stat-value" id="statElectro">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>얼음 원소</span>
+                        <span class="stat-value" id="statCryo">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>바람 원소</span>
+                        <span class="stat-value" id="statAnemo">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>바위 원소</span>
+                        <span class="stat-value" id="statGeo">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>풀 원소</span>
+                        <span class="stat-value" id="statDendro">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span>물리 피해</span>
+                        <span class="stat-value" id="statPhys">-</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- 무기 선택 팝업 -->
+<div id="weaponModal">
+
+    <div class="weapon-modal-content">
+
+        <div class="alu-header">
+            <h2>무기 선택</h2>
+
+            <button class="alu-button"
+                    onclick="closeWeaponModal()">
+                닫기
+            </button>
+        </div>
+
+        <input type="text"
+               id="weaponSearch"
+               placeholder="무기 이름 검색"
+               oninput="renderWeaponList()">
+
+        <div id="weaponList"></div>
+
+    </div>
+
+</div>
+
+
+    <!-- 캐릭터 데이터와 화면 제어 코드 -->
+    <script src="./js/char.js"></script>
+	<script src="./js/weapon.js"></script>
+	<script src="./js/artifact.js"></script>
+	<script src="./js/ALU.js"></script>
+	<script src="./js/main.js"></script>
+
+</body>
+</html>
